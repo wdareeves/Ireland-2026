@@ -83,6 +83,13 @@
   .detail-block strong { color: var(--text); font-weight: 600; }
   .detail-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); margin-top: 10px; font-weight: 600; }
   .detail-label:first-child { margin-top: 0; }
+  .matrix-note { font-size: 12px; color: var(--text-secondary); margin: 0 0 12px; }
+  .matrix-scroll { overflow-x: auto; }
+  table.matrix { border-collapse: collapse; font-size: 12px; }
+  table.matrix th, table.matrix td { border: 1px solid var(--border); text-align: center; padding: 7px 9px; white-space: nowrap; }
+  table.matrix th { font-weight: 600; color: var(--text-secondary); background: var(--card); }
+  table.matrix th.row-label, table.matrix td.row-label { text-align: left; font-weight: 600; color: var(--text); background: var(--card); position: sticky; left: 0; }
+  table.matrix td.self { color: var(--text-muted); background: var(--bg); }
   footer { text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 24px; }
   footer a { color: var(--accent); text-decoration: none; }
 </style>
@@ -109,6 +116,11 @@
     <div id="schedule-area"><div class="status">Loading schedule…</div></div>
   </div>
 
+  <div class="card">
+    <h2>Pairing matrix</h2>
+    <div id="matrix-area"><div class="status">Loading pairing matrix…</div></div>
+  </div>
+
   <footer>
     This page is read-only and refreshes automatically. Enter real scores on the
     <a href="https://docs.google.com/spreadsheets/d/1u123GupU7q30ZBX72e7YBgocuBr0QrNCCxGiQs4PmuY/edit#gid=2117207847" target="_blank" rel="noopener">Google Sheet</a>.
@@ -122,7 +134,7 @@
 // access-control-allow-origin: *, so it works from any page with a plain fetch,
 // no API key or JSONP script-tag trick required.
 const PUBLISHED_KEY = "2PACX-1vTEnz7upSi2y6PpYFPfkE9qu46u5hr0oOdFfhZOdnTm_U1lMzaF6auMg1AnudWu4cJe6xEDH8sLXpQi";
-const GIDS = { leaderboard: "1135406754", schedule: "884076011" };
+const GIDS = { leaderboard: "1135406754", schedule: "884076011", matrix: "1623880694" };
 const REFRESH_MS = 60000;
 
 function parseCSV(text) {
@@ -247,9 +259,65 @@ async function loadSchedule() {
   }
 }
 
+function shortName(full) {
+  return String(full || "").trim().split(" ")[0];
+}
+
+async function loadPairingMatrix() {
+  const area = document.getElementById("matrix-area");
+  try {
+    const rows = await fetchCsvRows(GIDS.matrix);
+    const hIdx = rows.findIndex(r => !r[0] && r[1]);
+    if (hIdx === -1) throw new Error("header row not found");
+    const players = rows[hIdx].slice(1).filter(p => p);
+    if (!players.length) throw new Error("no players in header");
+    const dataRows = [];
+    for (let i = hIdx + 1; i < rows.length && dataRows.length < players.length; i++) {
+      if (!rows[i][0]) break;
+      dataRows.push(rows[i]);
+    }
+    if (!dataRows.length) throw new Error("no data rows");
+
+    let maxVal = 0;
+    dataRows.forEach(r => {
+      r.slice(1).forEach(v => {
+        const n = Number(v);
+        if (!isNaN(n) && n > maxVal) maxVal = n;
+      });
+    });
+
+    let html = '<p class="matrix-note">Shared foursomes across the 5 fixed rounds (Days 1–5). Day 6\'s draft adds +1 to whichever 3 players you end up teamed with.</p>';
+    html += '<div class="matrix-scroll"><table class="matrix"><thead><tr><th class="row-label"></th>';
+    players.forEach(p => { html += '<th title="' + esc(p) + '">' + esc(shortName(p)) + '</th>'; });
+    html += '</tr></thead><tbody>';
+    dataRows.forEach(r => {
+      const rowName = r[0];
+      const selfIdx = players.indexOf(rowName);
+      html += '<tr><th class="row-label" title="' + esc(rowName) + '">' + esc(shortName(rowName)) + '</th>';
+      players.forEach((p, ci) => {
+        if (ci === selfIdx) {
+          html += '<td class="self">—</td>';
+        } else {
+          const raw = r[ci + 1];
+          const n = Number(raw);
+          const alpha = isNaN(n) || maxVal === 0 ? 0 : 0.12 + (n / maxVal) * 0.6;
+          html += '<td style="background: rgba(15,110,86,' + alpha.toFixed(2) + ')">' + esc(isNaN(n) ? raw : n) + '</td>';
+        }
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    area.innerHTML = html;
+  } catch (err) {
+    area.innerHTML = '<div class="status error">Couldn\'t load the pairing matrix.<br>' +
+      'Make sure the sheet is published to the web, then tap Refresh.<br>' +
+      '<small>' + esc(err.message || err) + '</small></div>';
+  }
+}
+
 async function loadAll() {
   document.getElementById("last-updated").textContent = "Refreshing…";
-  await Promise.all([loadLeaderboard(), loadSchedule()]);
+  await Promise.all([loadLeaderboard(), loadSchedule(), loadPairingMatrix()]);
   const now = new Date();
   document.getElementById("last-updated").textContent =
     "Updated " + now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
