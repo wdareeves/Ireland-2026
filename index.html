@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mr. Ireland Leaderboard</title>
+<style>
+  :root {
+    --bg: #f6f5f1;
+    --card: #ffffff;
+    --border: #e1e0d9;
+    --text: #16160f;
+    --text-secondary: #55544c;
+    --text-muted: #8a8980;
+    --accent: #0f6e56;
+    --accent-light: #e1f5ee;
+    --gold: #fff3cf;
+    --gold-text: #6b4e04;
+    --loss: #c0392b;
+    --win: #1d9e75;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17170f;
+      --card: #211f18;
+      --border: #3a382c;
+      --text: #f2f1ea;
+      --text-secondary: #c3c2b7;
+      --text-muted: #8a8980;
+      --accent: #5dcaa5;
+      --accent-light: #0f3d31;
+      --gold: #3a2f08;
+      --gold-text: #f7d774;
+      --loss: #e07a70;
+      --win: #5dcaa5;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    padding-bottom: 40px;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 20px 16px; }
+  header { text-align: center; margin-bottom: 20px; }
+  h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; }
+  .subtitle { font-size: 13px; color: var(--text-secondary); margin: 0; }
+  .refresh-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 12px; font-size: 12px; color: var(--text-muted); }
+  button {
+    font: inherit; font-size: 13px; padding: 6px 14px; border-radius: 20px;
+    border: 1px solid var(--border); background: var(--card); color: var(--text);
+    cursor: pointer;
+  }
+  button:active { transform: scale(0.97); }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px; margin-bottom: 16px;
+  }
+  .card h2 { font-size: 15px; font-weight: 700; margin: 0 0 12px; display: flex; align-items: center; gap: 6px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 4px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); font-weight: 600; }
+  td.num, th.num { text-align: right; }
+  tr.leader td { background: var(--gold); color: var(--gold-text); font-weight: 700; border-bottom-color: transparent; }
+  tr.leader td:first-child { border-radius: 8px 0 0 8px; }
+  tr.leader td:last-child { border-radius: 0 8px 8px 0; }
+  .pos { color: var(--win); }
+  .neg { color: var(--loss); }
+  .zero-sum { font-size: 12px; color: var(--text-muted); margin-top: 10px; }
+  .status { text-align: center; padding: 30px 16px; color: var(--text-secondary); font-size: 14px; }
+  .status.error { color: var(--loss); }
+  details { border-bottom: 1px solid var(--border); padding: 10px 0; }
+  details:last-child { border-bottom: none; }
+  summary { cursor: pointer; font-size: 14px; font-weight: 600; list-style: none; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  summary::-webkit-details-marker { display: none; }
+  summary .chev { color: var(--text-muted); font-size: 12px; transition: transform 0.15s; }
+  details[open] summary .chev { transform: rotate(90deg); }
+  .match-course { font-size: 12px; color: var(--text-secondary); font-weight: 400; }
+  .detail-block { font-size: 13px; color: var(--text-secondary); margin-top: 10px; white-space: pre-line; }
+  .detail-block strong { color: var(--text); font-weight: 600; }
+  .detail-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); margin-top: 10px; font-weight: 600; }
+  .detail-label:first-child { margin-top: 0; }
+  footer { text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 24px; }
+  footer a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🏆 Mr. Ireland Leaderboard</h1>
+    <p class="subtitle">Live standings — Ireland golf trip</p>
+    <div class="refresh-row">
+      <span id="last-updated">Loading…</span>
+      <button id="refresh-btn" onclick="loadAll()">Refresh now</button>
+    </div>
+  </header>
+
+  <div class="card">
+    <h2>Standings</h2>
+    <div id="leaderboard-area"><div class="status">Loading live standings…</div></div>
+    <div id="zero-sum" class="zero-sum"></div>
+  </div>
+
+  <div class="card">
+    <h2>Schedule & matchups</h2>
+    <div id="schedule-area"><div class="status">Loading schedule…</div></div>
+  </div>
+
+  <footer>
+    This page is read-only and refreshes automatically. Enter real scores on the
+    <a href="https://docs.google.com/spreadsheets/d/1u123GupU7q30ZBX72e7YBgocuBr0QrNCCxGiQs4PmuY/edit#gid=2117207847" target="_blank" rel="noopener">Google Sheet</a>.
+  </footer>
+</div>
+
+<script>
+const SPREADSHEET_ID = "1u123GupU7q30ZBX72e7YBgocuBr0QrNCCxGiQs4PmuY";
+const REFRESH_MS = 60000;
+let cbCounter = 0;
+
+function fetchRange(sheetName, range) {
+  return new Promise((resolve, reject) => {
+    const cbName = "__gvizCb" + (cbCounter++);
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error("timeout"));
+    }, 9000);
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[cbName];
+      const el = document.getElementById(cbName);
+      if (el) el.remove();
+    }
+    window[cbName] = (resp) => {
+      cleanup();
+      if (!resp || resp.status === "error" || !resp.table) {
+        reject(new Error("bad response"));
+      } else {
+        resolve(resp.table);
+      }
+    };
+    const script = document.createElement("script");
+    script.id = cbName;
+    const url = "https://docs.google.com/spreadsheets/d/" + SPREADSHEET_ID +
+      "/gviz/tq?tqx=out:json;responseHandler=" + cbName +
+      "&sheet=" + encodeURIComponent(sheetName) +
+      "&range=" + encodeURIComponent(range) +
+      "&headers=1&_=" + Date.now();
+    script.src = url;
+    script.onerror = () => { cleanup(); reject(new Error("script load failed")); };
+    document.body.appendChild(script);
+  });
+}
+
+function cellText(row, i) {
+  const c = row && row.c && row.c[i];
+  if (!c) return "";
+  if (c.f !== undefined && c.f !== null) return c.f;
+  if (c.v === null || c.v === undefined) return "";
+  return String(c.v);
+}
+function cellNum(row, i) {
+  const c = row && row.c && row.c[i];
+  if (!c || c.v === null || c.v === undefined) return 0;
+  return Number(c.v);
+}
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+async function loadLeaderboard() {
+  const area = document.getElementById("leaderboard-area");
+  const zsArea = document.getElementById("zero-sum");
+  try {
+    const table = await fetchRange("Leaderboard", "A4:G12");
+    const rows = table.rows || [];
+    if (!rows.length) throw new Error("no rows");
+    let maxNet = -Infinity;
+    const parsed = rows.map(r => {
+      const net = cellNum(r, 5);
+      if (net > maxNet) maxNet = net;
+      return {
+        rank: cellText(r, 0),
+        player: cellText(r, 1),
+        hcp: cellText(r, 2),
+        played: cellText(r, 3),
+        won: cellText(r, 4),
+        net: net,
+        netText: cellText(r, 5),
+        prize: cellText(r, 6),
+      };
+    });
+    let html = '<table><thead><tr>' +
+      '<th>#</th><th>Player</th><th class="num">HCP</th><th class="num">Played</th>' +
+      '<th class="num">Won</th><th class="num">Net $</th><th class="num">Prize</th>' +
+      '</tr></thead><tbody>';
+    parsed.forEach(p => {
+      const isLeader = p.net === maxNet;
+      const netClass = p.net > 0 ? "pos" : (p.net < 0 ? "neg" : "");
+      html += '<tr class="' + (isLeader ? "leader" : "") + '">' +
+        '<td>' + esc(p.rank) + '</td>' +
+        '<td>' + esc(p.player) + '</td>' +
+        '<td class="num">' + esc(p.hcp) + '</td>' +
+        '<td class="num">' + esc(p.played) + '</td>' +
+        '<td class="num">' + esc(p.won) + '</td>' +
+        '<td class="num ' + netClass + '">' + esc(p.netText) + '</td>' +
+        '<td class="num">' + esc(p.prize) + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    area.innerHTML = html;
+
+    try {
+      const zsTable = await fetchRange("Leaderboard", "A14:B14");
+      const zr = (zsTable.rows || [])[0];
+      if (zr) {
+        zsArea.textContent = cellText(zr, 0) + " " + cellText(zr, 1);
+      }
+    } catch (e) { /* non-critical, skip silently */ }
+  } catch (err) {
+    area.innerHTML = '<div class="status error">Couldn\'t load live standings.<br>' +
+      'Make sure the sheet has been published to the web<br>' +
+      '(File → Share → Publish to web), then tap Refresh.</div>';
+  }
+}
+
+async function loadSchedule() {
+  const area = document.getElementById("schedule-area");
+  try {
+    const table = await fetchRange("Schedule", "A4:I14");
+    const rows = table.rows || [];
+    if (!rows.length) throw new Error("no rows");
+    let html = "";
+    rows.forEach(r => {
+      const match = cellText(r, 0);
+      const course = cellText(r, 1);
+      const parRatingSlope = cellText(r, 2);
+      const about = cellText(r, 3);
+      const game = cellText(r, 4);
+      const teams = cellText(r, 5);
+      const foursome = cellText(r, 6);
+      const buyin = cellText(r, 7);
+      const pot = cellText(r, 8);
+      if (!match) return;
+      html += '<details>' +
+        '<summary><span>' + esc(match) + '<br><span class="match-course">' + esc(course) + '</span></span>' +
+        '<span class="chev">▶</span></summary>' +
+        '<div class="detail-block">' + esc(game) + (buyin ? ' — ' + esc(buyin) + '/player, ' + esc(pot) + ' pot' : '') + '</div>' +
+        (parRatingSlope ? '<div class="detail-label">Course</div><div class="detail-block">' + esc(parRatingSlope) + (about ? '\n' + esc(about) : '') + '</div>' : '') +
+        (teams ? '<div class="detail-label">Teams</div><div class="detail-block">' + esc(teams) + '</div>' : '') +
+        (foursome ? '<div class="detail-label">Foursome</div><div class="detail-block">' + esc(foursome) + '</div>' : '') +
+        '</details>';
+    });
+    area.innerHTML = html || '<div class="status">No matches found.</div>';
+  } catch (err) {
+    area.innerHTML = '<div class="status error">Couldn\'t load the schedule.<br>' +
+      'Make sure the sheet has been published to the web, then tap Refresh.</div>';
+  }
+}
+
+async function loadAll() {
+  document.getElementById("last-updated").textContent = "Refreshing…";
+  await Promise.all([loadLeaderboard(), loadSchedule()]);
+  const now = new Date();
+  document.getElementById("last-updated").textContent =
+    "Updated " + now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+loadAll();
+setInterval(loadAll, REFRESH_MS);
+</script>
+</body>
+</html>
