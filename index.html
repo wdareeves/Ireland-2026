@@ -90,6 +90,10 @@
   table.matrix th { font-weight: 600; color: var(--text-secondary); background: var(--card); }
   table.matrix th.row-label, table.matrix td.row-label { text-align: left; font-weight: 600; color: var(--text); background: var(--card); position: sticky; left: 0; }
   table.matrix td.self { color: var(--text-muted); background: var(--bg); }
+  .howto-intro { font-size: 13px; color: var(--text-secondary); font-style: italic; margin: 0 0 14px; }
+  .howto-section { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: #fff; background: var(--accent); padding: 6px 10px; border-radius: 6px; margin: 16px 0 8px; }
+  .howto-section:first-of-type { margin-top: 0; }
+  .howto-p { font-size: 13px; color: var(--text-secondary); margin: 0 0 10px; }
   footer { text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 24px; }
   footer a { color: var(--accent); text-decoration: none; }
 </style>
@@ -121,9 +125,14 @@
     <div id="matrix-area"><div class="status">Loading pairing matrix…</div></div>
   </div>
 
+  <div class="card">
+    <h2>How this works</h2>
+    <div id="howto-area"><div class="status">Loading…</div></div>
+  </div>
+
   <footer>
     This page is read-only and refreshes automatically. Enter real scores on the
-    <a href="https://docs.google.com/spreadsheets/d/1u123GupU7q30ZBX72e7YBgocuBr0QrNCCxGiQs4PmuY/edit#gid=2117207847" target="_blank" rel="noopener">Google Sheet</a>.
+    <a href="https://docs.google.com/spreadsheets/d/1AfzjTrdJm0LUEdeNUU5iNQRRqFymKnhz-SdjHkNINHI/edit#gid=2117207847" target="_blank" rel="noopener">Google Sheet</a>.
   </footer>
 </div>
 
@@ -134,7 +143,7 @@
 // access-control-allow-origin: *, so it works from any page with a plain fetch,
 // no API key or JSONP script-tag trick required.
 const PUBLISHED_KEY = "2PACX-1vTEnz7upSi2y6PpYFPfkE9qu46u5hr0oOdFfhZOdnTm_U1lMzaF6auMg1AnudWu4cJe6xEDH8sLXpQi";
-const GIDS = { leaderboard: "1135406754", schedule: "884076011", matrix: "1623880694" };
+const GIDS = { leaderboard: "1135406754", schedule: "884076011", matrix: "1623880694", howto: "1601411585" };
 const REFRESH_MS = 60000;
 
 function parseCSV(text) {
@@ -315,9 +324,43 @@ async function loadPairingMatrix() {
   }
 }
 
+function isSectionHeader(text) {
+  const t = String(text || "").trim();
+  if (!t) return false;
+  const letters = t.replace(/[^A-Za-z]/g, "");
+  return letters.length > 0 && letters === letters.toUpperCase();
+}
+
+async function loadHowItWorks() {
+  const area = document.getElementById("howto-area");
+  try {
+    const rows = await fetchCsvRows(GIDS.howto);
+    const nonBlank = rows.filter(r => r[0] && String(r[0]).trim());
+    if (!nonBlank.length) throw new Error("no content rows");
+    // First row is the page title -- redundant with this card's own heading, skip it.
+    const body = nonBlank.slice(1);
+    let html = "";
+    body.forEach((r, i) => {
+      const text = r[0];
+      if (isSectionHeader(text)) {
+        html += '<div class="howto-section">' + esc(text) + '</div>';
+      } else if (i === 0) {
+        html += '<p class="howto-intro">' + esc(text) + '</p>';
+      } else {
+        html += '<p class="howto-p">' + esc(text) + '</p>';
+      }
+    });
+    area.innerHTML = html || '<div class="status">No content found.</div>';
+  } catch (err) {
+    area.innerHTML = '<div class="status error">Couldn\'t load this section.<br>' +
+      'Make sure the sheet is published to the web, then tap Refresh.<br>' +
+      '<small>' + esc(err.message || err) + '</small></div>';
+  }
+}
+
 async function loadAll() {
   document.getElementById("last-updated").textContent = "Refreshing…";
-  await Promise.all([loadLeaderboard(), loadSchedule(), loadPairingMatrix()]);
+  await Promise.all([loadLeaderboard(), loadSchedule(), loadPairingMatrix(), loadHowItWorks()]);
   const now = new Date();
   document.getElementById("last-updated").textContent =
     "Updated " + now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
