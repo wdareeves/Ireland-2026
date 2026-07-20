@@ -130,6 +130,11 @@
     <div id="howto-area"><div class="status">Loading…</div></div>
   </div>
 
+  <div class="card">
+    <h2>Food &amp; drink guide</h2>
+    <div id="fooddrink-area"><div class="status">Loading…</div></div>
+  </div>
+
   <footer>
     This page is read-only and refreshes automatically. Enter real scores on the
     <a href="https://docs.google.com/spreadsheets/d/1AfzjTrdJm0LUEdeNUU5iNQRRqFymKnhz-SdjHkNINHI/edit#gid=2117207847" target="_blank" rel="noopener">Google Sheet</a>.
@@ -143,7 +148,7 @@
 // access-control-allow-origin: *, so it works from any page with a plain fetch,
 // no API key or JSONP script-tag trick required.
 const PUBLISHED_KEY = "2PACX-1vTEnz7upSi2y6PpYFPfkE9qu46u5hr0oOdFfhZOdnTm_U1lMzaF6auMg1AnudWu4cJe6xEDH8sLXpQi";
-const GIDS = { leaderboard: "1135406754", schedule: "884076011", matrix: "1623880694", howto: "1601411585" };
+const GIDS = { leaderboard: "1135406754", schedule: "884076011", matrix: "1623880694", howto: "1601411585", foodDrink: "1800857795" };
 const REFRESH_MS = 60000;
 
 function parseCSV(text) {
@@ -358,9 +363,54 @@ async function loadHowItWorks() {
   }
 }
 
+// Turns bare domains / URLs in already-escaped text into clickable links, e.g.
+// "More: quinnsbarnewcastle.com" -> a real <a> tag. Requires a dot + 2+ letter
+// TLD so ordinary sentence punctuation ("Co. Down", "e.g.") never matches, and
+// stops the path at whitespace/parens so a trailing ")." doesn't get swept in.
+function linkifyText(text) {
+  const escaped = esc(text);
+  return escaped.replace(/\b((?:https?:\/\/)?[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}(?:\/[^\s<>()]*)?)/gi, (m) => {
+    let url = m;
+    let trail = "";
+    while (url.length && /[.,;:!?]/.test(url[url.length - 1])) {
+      trail = url[url.length - 1] + trail;
+      url = url.slice(0, -1);
+    }
+    const href = /^https?:\/\//i.test(url) ? url : "https://" + url;
+    return '<a href="' + href + '" target="_blank" rel="noopener">' + url + '</a>' + trail;
+  });
+}
+
+async function loadFoodDrink() {
+  const area = document.getElementById("fooddrink-area");
+  try {
+    const rows = await fetchCsvRows(GIDS.foodDrink);
+    const nonBlank = rows.filter(r => r[0] && String(r[0]).trim());
+    if (!nonBlank.length) throw new Error("no content rows");
+    // First row is the page title -- redundant with this card's own heading, skip it.
+    const body = nonBlank.slice(1);
+    let html = "";
+    body.forEach((r, i) => {
+      const text = r[0];
+      if (isSectionHeader(text)) {
+        html += '<div class="howto-section">' + esc(text) + '</div>';
+      } else if (i === 0) {
+        html += '<p class="howto-intro">' + linkifyText(text) + '</p>';
+      } else {
+        html += '<p class="howto-p">' + linkifyText(text) + '</p>';
+      }
+    });
+    area.innerHTML = html || '<div class="status">No content found.</div>';
+  } catch (err) {
+    area.innerHTML = '<div class="status error">Couldn\'t load this section.<br>' +
+      'Make sure the sheet is published to the web, then tap Refresh.<br>' +
+      '<small>' + esc(err.message || err) + '</small></div>';
+  }
+}
+
 async function loadAll() {
   document.getElementById("last-updated").textContent = "Refreshing…";
-  await Promise.all([loadLeaderboard(), loadSchedule(), loadPairingMatrix(), loadHowItWorks()]);
+  await Promise.all([loadLeaderboard(), loadSchedule(), loadPairingMatrix(), loadHowItWorks(), loadFoodDrink()]);
   const now = new Date();
   document.getElementById("last-updated").textContent =
     "Updated " + now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
