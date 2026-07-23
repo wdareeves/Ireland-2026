@@ -96,6 +96,12 @@
   .howto-p { font-size: 13px; color: var(--text-secondary); margin: 0 0 10px; }
   footer { text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 24px; }
   footer a { color: var(--accent); text-decoration: none; }
+  .ledger-note { font-size: 12px; color: var(--text-secondary); margin: 0 0 12px; }
+  table.ledger td { padding: 6px 10px; }
+  .rl-buyin { font-size: 11px; color: var(--text-muted); }
+  .rl-payout { font-size: 13px; font-weight: 700; margin-top: 2px; }
+  .rl-payout.pos { color: var(--win); }
+  .rl-payout.neg { color: var(--loss); }
 </style>
 </head>
 <body>
@@ -118,6 +124,11 @@
   <div class="card">
     <h2>Schedule & matchups</h2>
     <div id="schedule-area"><div class="status">Loading schedule…</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Buy-in &amp; payout by round</h2>
+    <div id="ledger-area"><div class="status">Loading buy-in &amp; payout…</div></div>
   </div>
 
   <div class="card">
@@ -153,7 +164,7 @@
 // access-control-allow-origin: *, so it works from any page with a plain fetch,
 // no API key or JSONP script-tag trick required.
 const PUBLISHED_KEY = "2PACX-1vTEnz7upSi2y6PpYFPfkE9qu46u5hr0oOdFfhZOdnTm_U1lMzaF6auMg1AnudWu4cJe6xEDH8sLXpQi";
-const GIDS = { leaderboard: "1135406754", schedule: "884076011", matrix: "1623880694", howto: "1601411585", foodDrink: "1800857795", packing: "48830357" };
+const GIDS = { leaderboard: "1135406754", schedule: "884076011", matrix: "1623880694", roundLedger: "445216258", howto: "1601411585", foodDrink: "1800857795", packing: "48830357" };
 const REFRESH_MS = 60000;
 
 function parseCSV(text) {
@@ -334,6 +345,46 @@ async function loadPairingMatrix() {
   }
 }
 
+async function loadRoundLedger() {
+  const area = document.getElementById("ledger-area");
+  try {
+    const rows = await fetchCsvRows(GIDS.roundLedger);
+    const hIdx = rows.findIndex(r => r[0] === "Player");
+    if (hIdx === -1) throw new Error("header row not found");
+    const roundNames = rows[hIdx].slice(1).filter(c => c);
+    if (!roundNames.length) throw new Error("no round columns");
+    const dataRows = [];
+    for (let i = hIdx + 1; i < rows.length && dataRows.length < 8; i++) {
+      if (!rows[i][0]) break;
+      dataRows.push(rows[i]);
+    }
+    if (!dataRows.length) throw new Error("no data rows");
+
+    let html = '<p class="ledger-note">Buy-in paid vs. net payout per player, rolled up by day — multi-leg days (Day 1, Day 2, Day 5) combine their legs into one round.</p>';
+    html += '<div class="matrix-scroll"><table class="matrix ledger"><thead><tr><th class="row-label"></th>';
+    roundNames.forEach(r => { html += '<th>' + esc(r) + '</th>'; });
+    html += '</tr></thead><tbody>';
+    dataRows.forEach(r => {
+      html += '<tr><th class="row-label" title="' + esc(r[0]) + '">' + esc(shortName(r[0])) + '</th>';
+      for (let ci = 1; ci <= roundNames.length; ci++) {
+        const cellVal = r[ci] || "";
+        const parts = cellVal.split("→").map(s => s.trim());
+        const buyin = parts[0] || "";
+        const payout = parts[1] || "";
+        const cls = payout.indexOf("+") === 0 ? "pos" : (payout.indexOf("-") === 0 ? "neg" : "");
+        html += '<td><div class="rl-buyin">' + esc(buyin) + '</div><div class="rl-payout ' + cls + '">' + esc(payout) + '</div></td>';
+      }
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    area.innerHTML = html;
+  } catch (err) {
+    area.innerHTML = '<div class="status error">Couldn\'t load buy-in &amp; payout.<br>' +
+      'Make sure the sheet is published to the web, then tap Refresh.<br>' +
+      '<small>' + esc(err.message || err) + '</small></div>';
+  }
+}
+
 function isSectionHeader(text) {
   const t = String(text || "").trim();
   if (!t) return false;
@@ -442,7 +493,7 @@ async function loadPackingList() {
 
 async function loadAll() {
   document.getElementById("last-updated").textContent = "Refreshing…";
-  await Promise.all([loadLeaderboard(), loadSchedule(), loadPairingMatrix(), loadHowItWorks(), loadFoodDrink(), loadPackingList()]);
+  await Promise.all([loadLeaderboard(), loadSchedule(), loadPairingMatrix(), loadRoundLedger(), loadHowItWorks(), loadFoodDrink(), loadPackingList()]);
   const now = new Date();
   document.getElementById("last-updated").textContent =
     "Updated " + now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
