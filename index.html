@@ -69,7 +69,6 @@
   tr.leader td:last-child { border-radius: 0 8px 8px 0; }
   .pos { color: var(--win); }
   .neg { color: var(--loss); }
-  .zero-sum { font-size: 12px; color: var(--text-muted); margin-top: 10px; }
   .status { text-align: center; padding: 30px 16px; color: var(--text-secondary); font-size: 14px; }
   .status.error { color: var(--loss); }
   details { border-bottom: 1px solid var(--border); padding: 10px 0; }
@@ -181,7 +180,6 @@
   <div class="card">
     <h2>Standings</h2>
     <div id="leaderboard-area"><div class="status">Loading live standings…</div></div>
-    <div id="zero-sum" class="zero-sum"></div>
   </div>
   </div>
   </section>
@@ -301,7 +299,6 @@ function moneyToNumber(s) {
 
 async function loadLeaderboard() {
   const area = document.getElementById("leaderboard-area");
-  const zsArea = document.getElementById("zero-sum");
   try {
     const rows = await fetchCsvRows(GIDS.leaderboard);
     const hIdx = rows.findIndex(r => r[0] === "Rank");
@@ -313,35 +310,32 @@ async function loadLeaderboard() {
     }
     if (!dataRows.length) throw new Error("no data rows");
 
-    let maxNet = -Infinity;
+    let maxWon = -Infinity;
     const parsed = dataRows.map(r => {
-      const net = moneyToNumber(r[5]);
-      if (net > maxNet) maxNet = net;
-      return { rank: r[0], player: r[1], hcp: r[2], played: r[3], won: r[4], net: net, netText: r[5], prize: r[6] };
+      const won$ = moneyToNumber(r[5]);
+      if (won$ > maxWon) maxWon = won$;
+      return { rank: r[0], player: r[1], hcp: r[2], played: r[3], won: r[4], won$: won$, wonText: r[5], prize: r[6] };
     });
 
     let html = '<table><thead><tr>' +
       '<th>#</th><th>Player</th><th class="num">HCP</th><th class="num">Played</th>' +
-      '<th class="num">Won</th><th class="num">Net $</th><th class="num">Prize</th>' +
+      '<th class="num">Won</th><th class="num">$ Won</th><th class="num">Prize</th>' +
       '</tr></thead><tbody>';
     parsed.forEach(p => {
-      const isLeader = p.net === maxNet && maxNet > 0;
-      const netClass = p.net > 0 ? "pos" : (p.net < 0 ? "neg" : "");
+      const isLeader = p.won$ === maxWon && maxWon > 0;
+      const wonClass = p.won$ > 0 ? "pos" : "";
       html += '<tr class="' + (isLeader ? "leader" : "") + '">' +
         '<td>' + esc(p.rank) + '</td>' +
         '<td>' + esc(p.player) + '</td>' +
         '<td class="num">' + esc(p.hcp) + '</td>' +
         '<td class="num">' + esc(p.played) + '</td>' +
         '<td class="num">' + esc(p.won) + '</td>' +
-        '<td class="num ' + netClass + '">' + esc(p.netText) + '</td>' +
+        '<td class="num ' + wonClass + '">' + esc(p.wonText) + '</td>' +
         '<td class="num">' + esc(p.prize) + '</td>' +
         '</tr>';
     });
     html += '</tbody></table>';
     area.innerHTML = html;
-
-    const zsRow = rows.find(r => r[0] && r[0].indexOf("Zero-sum") !== -1);
-    zsArea.textContent = zsRow ? (zsRow[0] + " " + zsRow[1]) : "";
   } catch (err) {
     area.innerHTML = '<div class="status error">Couldn\'t load live standings.<br>' +
       'Make sure the sheet is published to the web<br>' +
