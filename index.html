@@ -113,13 +113,50 @@
   .tab-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
+  .hero-photo {
+    margin: -20px -16px 20px; padding: 16px 16px 20px;
+    min-height: 230px; display: flex; align-items: flex-end; flex-direction: column; justify-content: flex-end;
+    background-size: cover; border-radius: 0 0 20px 20px; width: calc(100% + 32px);
+  }
+  .hero-photo h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; text-align: center; color: #fff; }
+  .hero-photo .hero-subtitle { font-size: 13px; color: rgba(255,255,255,0.85); margin: 0; text-align: center; }
+  .hero-photo .credit { text-align: center; font-size: 10px; color: rgba(255,255,255,0.55); margin: 10px 0 0; }
+  .hero-photo.hp-rcd {
+    background-image:
+      linear-gradient(180deg, rgba(8,16,12,0.05) 0%, rgba(8,16,12,0.20) 55%, rgba(8,16,12,0.80) 100%),
+      url('https://i0.wp.com/thewanderinggolfers.com/wp-content/uploads/2025/07/Royal-County-Down-Golf-Club.jpg?w=1200&quality=80&ssl=1');
+    background-position: center 22%;
+  }
+  .hero-photo.hp-portrush {
+    background-image:
+      linear-gradient(180deg, rgba(8,16,12,0.05) 0%, rgba(8,16,12,0.20) 55%, rgba(8,16,12,0.80) 100%),
+      url('https://i0.wp.com/thewanderinggolfers.com/wp-content/uploads/2023/10/Royal-Portrush-Golf-Club-Dunluce-Links-scaled.jpg?w=1200&quality=85&ssl=1');
+    background-position: center 55%;
+  }
+  .hero-photo.hp-donard {
+    background-image:
+      linear-gradient(180deg, rgba(8,16,12,0.05) 0%, rgba(8,16,12,0.20) 55%, rgba(8,16,12,0.80) 100%),
+      url('https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/The_Slieve_Donard_Hotel%2C_Newcastle_-_geograph.org.uk_-_5615373.jpg/1280px-The_Slieve_Donard_Hotel%2C_Newcastle_-_geograph.org.uk_-_5615373.jpg');
+    background-position: center 15%;
+  }
+  .hero-photo.hp-ra {
+    background-image:
+      linear-gradient(180deg, rgba(8,16,12,0.05) 0%, rgba(8,16,12,0.20) 55%, rgba(8,16,12,0.80) 100%),
+      url('https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/R%26A_Clubhouse_St_Andrews_-1591285_1920.jpg/1280px-R%26A_Clubhouse_St_Andrews_-1591285_1920.jpg');
+    background-position: center 40%;
+  }
+  .tab-content { position: relative; }
+  .map-watermark {
+    position: absolute; top: -6%; right: -10%; width: 62%; height: auto;
+    opacity: 0.14; pointer-events: none; z-index: 0;
+  }
+  .map-watermark { fill: var(--accent); }
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="ireland-outline" d="M210.3,0.0 L207.7,4.1 L209.3,9.5 L203.4,10.8 L197.8,14.9 L193.8,12.3 L187.5,13.1 L180.6,16.3 L172.2,17.9 L165.4,19.3 L157.9,22.6 L150.8,26.3 L137.2,37.1 L132.8,41.5 L133.4,48.5 L137.9,51.7 L137.6,55.7 L135.1,59.3 L132.2,65.0 L124.7,67.2 L119.6,73.1 L115.8,79.8 L121.7,85.1 L132.5,90.0 L141.7,92.5 L153.0,91.2 L147.6,97.1 L141.4,99.1 L137.9,102.7 L132.7,107.1 L125.7,109.7 L127.5,114.1 L127.5,118.0 L120.3,120.0 L113.3,117.5 L104.8,116.8 L97.7,126.0 L96.8,116.5 L90.4,113.9 L82.2,113.4 L71.0,115.1 L60.6,112.4 L53.1,113.2 L49.6,119.0 L46.7,115.8 L38.1,117.0 L37.6,120.9 L31.0,132.2 L28.4,137.8 L29.3,141.9 L35.2,144.5 L42.3,142.6 L43.7,135.6 L45.4,135.1 L42.5,145.3 L36.2,146.9 L29.3,149.5 L25.6,152.4 L29.9,155.6 L36.4,156.5 L40.9,161.0 L46.1,166.1 L54.3,167.5 L61.6,166.1 L62.2,171.1 L53.5,172.4 L49.8,176.1 L48.1,180.6 L47.0,186.3 L41.8,189.6 L37.8,192.9 L30.1,195.0 L24.9,200.0 L32.2,205.9 L29.9,209.6 L26.3,215.0 L34.5,217.3 L41.1,219.0 L42.8,222.7 L49.6,227.0 L56.6,233.3 L72.6,236.5 L95.2,233.5 L95.2,236.1 L85.0,239.8 L83.1,246.8 L79.2,249.6 L75.7,245.6 L70.9,242.6 L63.4,239.3 L55.0,238.9 L49.4,239.4 L54.3,243.3 L61.5,247.7 L72.4,253.6 L76.4,258.7 L73.7,263.8 L77.8,266.7 L76.4,270.9 L70.2,274.9 L72.4,279.2 L68.1,281.5 L57.8,291.9 L47.7,296.5 L43.9,303.4 L48.6,306.3 L62.0,305.2 L61.1,308.8 L54.8,313.0 L46.1,315.5 L45.1,320.0 L52.4,324.1 L50.0,331.9 L47.4,333.5 L44.9,325.3 L40.2,325.7 L37.8,332.8 L36.4,329.4 L32.9,329.6 L15.5,338.6 L5.6,347.5 L0.0,352.9 L2.8,359.3 L8.2,361.0 L12.0,357.9 L19.7,355.4 L31.9,354.0 L41.8,352.9 L39.5,356.1 L32.9,359.7 L22.3,364.6 L13.6,374.1 L16.2,381.3 L18.8,384.8 L19.5,389.1 L26.8,388.2 L24.4,393.2 L30.1,394.9 L39.7,393.1 L36.7,396.5 L35.3,401.6 L28.7,403.2 L26.6,408.8 L31.9,408.8 L41.3,409.4 L46.1,407.0 L56.9,405.9 L52.6,409.4 L51.9,413.2 L57.5,413.9 L52.6,417.0 L53.5,420.1 L58.5,424.5 L66.0,420.1 L72.8,419.9 L71.6,425.4 L73.8,427.6 L83.9,422.5 L93.7,420.3 L106.2,413.7 L113.3,415.4 L118.6,409.4 L129.0,410.6 L129.7,406.1 L134.1,403.2 L134.1,408.1 L139.3,406.3 L140.5,400.9 L153.0,394.9 L158.1,388.4 L173.4,383.1 L174.6,379.7 L183.5,376.8 L182.5,372.8 L190.7,371.9 L194.7,368.3 L198.8,367.1 L204.1,359.2 L204.4,354.3 L212.2,350.7 L222.7,351.5 L230.4,351.6 L236.1,349.7 L236.8,352.2 L241.7,351.5 L245.7,347.1 L251.1,343.7 L255.4,343.9 L261.2,346.6 L269.2,345.5 L277.5,347.0 L282.1,335.7 L277.7,334.3 L274.6,329.3 L277.9,328.2 L277.5,321.6 L281.5,316.4 L288.3,304.7 L285.7,295.5 L290.6,288.6 L292.0,280.4 L295.8,274.8 L298.4,268.2 L300.0,260.3 L297.6,256.1 L297.2,244.7 L294.3,235.9 L292.9,234.5 L292.2,231.3 L292.2,229.1 L294.6,227.1 L294.0,226.5 L292.5,226.3 L291.3,225.1 L291.2,223.8 L289.7,223.3 L288.7,224.4 L286.7,223.1 L286.1,221.7 L288.1,220.8 L287.6,219.8 L288.5,219.3 L291.4,216.9 L291.7,217.7 L293.1,218.9 L294.4,218.8 L295.9,218.4 L296.2,217.2 L296.0,215.3 L294.6,214.5 L293.8,214.4 L292.4,214.1 L291.8,212.6 L291.3,209.6 L290.6,208.8 L292.4,206.0 L293.3,203.9 L292.2,203.5 L292.0,202.7 L294.2,201.7 L294.1,201.0 L294.1,200.0 L294.1,198.0 L293.6,196.7 L293.9,196.1 L293.3,195.1 L294.5,194.9 L294.4,193.9 L291.8,193.9 L291.1,194.3 L290.2,194.1 L289.1,193.8 L288.2,191.5 L287.3,191.3 L286.9,189.6 L286.7,189.2 L285.4,189.0 L284.7,187.0 L284.1,185.9 L283.2,181.5 L283.5,179.7 L283.1,179.4 L283.0,177.4 L283.6,174.6 L283.9,173.1 L284.7,172.8 L285.0,172.2 L285.2,171.8 L284.7,171.6 L283.6,171.3 L282.7,170.9 L282.3,170.4 L282.3,169.4 L282.9,166.8 L283.9,165.3 L283.4,164.7 L282.9,164.4 L282.7,164.7 L282.0,164.2 L281.5,163.7 L281.1,163.9 L280.3,163.8 L279.9,163.2 L279.2,163.0 L278.2,163.3 L277.8,162.9 L277.3,162.5 L275.7,161.1 L275.1,158.8 L275.2,156.9 L274.8,156.2 L274.8,155.5 L275.6,155.2 L275.6,154.4 L276.1,153.1 L275.8,152.2 L277.2,151.5 L277.5,150.6 L277.0,149.4 L277.5,149.3 L278.8,149.3 L279.6,150.1 L281.3,151.3 L283.8,152.3 L285.1,152.8 L287.8,153.1 L289.4,152.7 L292.4,150.4 L291.6,149.2 L290.8,147.9 L290.8,147.0 L290.2,146.3 L289.2,146.8 L288.4,146.3 L287.1,145.3 L286.8,144.5 L285.5,143.4 L284.1,142.6 L282.9,141.5 L281.6,139.6 L281.0,138.8 L280.9,138.5 L280.6,138.4 L280.0,138.3 L278.1,140.6 L277.0,138.7 L275.6,138.2 L275.1,142.8 L270.4,143.8 L268.0,142.4 L265.9,144.5 L261.7,144.1 L260.3,146.5 L257.2,142.9 L257.0,138.8 L258.0,131.8 L254.2,129.3 L251.6,130.8 L246.9,126.3 L246.1,122.7 L244.9,122.2 L243.1,120.4 L243.1,119.8 L244.1,120.1 L244.5,119.2 L242.9,113.4 L242.2,113.2 L241.1,113.1 L240.9,111.5 L240.9,110.8 L240.2,110.1 L239.5,110.0 L239.9,109.6 L239.3,109.5 L238.6,109.1 L238.6,108.8 L237.8,108.6 L237.7,108.2 L237.3,107.7 L236.7,107.7 L236.4,107.1 L236.0,106.9 L235.6,107.1 L235.2,107.0 L235.1,106.3 L234.1,106.1 L233.1,105.5 L231.6,106.6 L230.8,108.2 L230.8,108.9 L228.2,111.1 L228.7,112.3 L227.4,113.0 L225.5,114.6 L223.7,114.1 L223.3,114.4 L223.7,114.8 L223.8,117.4 L222.8,117.1 L221.7,118.4 L221.9,118.8 L224.2,120.1 L223.5,120.8 L224.0,121.4 L225.0,121.2 L225.5,122.5 L226.1,123.3 L225.2,124.4 L225.7,124.7 L225.7,126.4 L224.3,127.1 L223.6,126.8 L223.3,126.4 L222.6,127.0 L222.0,127.6 L221.3,127.4 L220.3,127.9 L220.5,128.4 L219.7,128.4 L219.3,129.1 L220.3,129.3 L220.1,129.6 L218.8,129.8 L218.9,131.4 L219.9,132.3 L218.8,132.8 L218.9,133.4 L218.6,134.9 L217.0,137.6 L216.1,137.3 L215.7,136.3 L216.0,136.2 L216.6,136.4 L217.1,135.5 L216.2,135.0 L216.3,134.6 L216.9,134.0 L217.4,132.5 L216.9,131.9 L216.4,132.5 L215.6,132.5 L213.7,134.8 L214.4,135.6 L215.1,136.2 L215.0,136.8 L215.7,137.6 L215.0,138.2 L214.5,137.3 L213.5,137.9 L213.2,137.5 L212.1,136.4 L210.3,137.4 L210.1,137.1 L211.2,135.3 L208.2,135.2 L208.6,133.9 L206.3,134.4 L204.8,137.1 L201.6,135.9 L200.4,137.3 L199.4,136.1 L196.6,135.2 L193.1,130.6 L192.2,131.0 L191.2,128.6 L183.3,128.7 L180.9,127.2 L180.0,119.4 L174.3,117.5 L171.3,112.2 L168.7,111.7 L161.6,103.0 L161.2,100.3 L164.4,100.5 L166.5,99.0 L169.1,98.3 L171.7,92.2 L173.9,92.3 L174.3,93.4 L181.4,93.2 L183.0,92.0 L182.3,91.2 L184.6,88.7 L186.7,88.0 L187.4,86.8 L190.9,85.3 L191.1,84.6 L190.5,84.6 L190.3,83.0 L187.8,84.3 L186.8,84.0 L186.0,84.1 L185.3,83.1 L184.6,83.0 L183.5,82.1 L182.7,83.0 L181.2,83.1 L181.0,81.1 L178.2,80.4 L177.3,78.6 L177.9,77.1 L176.7,75.8 L179.4,75.3 L182.4,72.0 L184.0,73.6 L185.6,73.7 L185.9,74.8 L188.0,75.3 L189.0,73.7 L195.1,70.5 L195.5,71.0 L197.5,71.2 L197.7,70.4 L198.4,70.4 L198.5,71.1 L200.2,71.5 L201.1,70.9 L200.6,70.0 L200.6,65.4 L204.1,63.0 L204.9,61.7 L207.3,57.2 L206.4,54.7 L206.8,53.5 L206.8,50.6 L209.9,49.9 L209.4,46.4 L210.2,44.4 L209.6,43.4 L213.2,38.3 L214.9,39.2 L216.0,37.6 L216.7,38.8 L218.0,37.2 L219.3,36.9 L221.1,34.3 L226.3,28.4 L237.9,22.4 L241.5,21.1 L242.9,18.6 L235.6,13.3 L228.4,11.6 L226.5,6.6 L219.0,2.5 L210.3,0.0Z"/></defs></svg>
 <div class="wrap">
   <header>
-    <h1>🏆 Mr. Ireland Leaderboard</h1>
-    <p class="subtitle">Live standings — Ireland golf trip</p>
     <div class="refresh-row">
       <span id="last-updated">Loading…</span>
       <button id="refresh-btn" onclick="loadAll()">Refresh now</button>
@@ -134,14 +171,29 @@
   </nav>
 
   <section class="tab-panel" id="panel-standings">
+  <div class="hero-photo hp-rcd">
+    <h1>🏆 Mr. Ireland Leaderboard</h1>
+    <p class="hero-subtitle">Live standings — Ireland golf trip</p>
+    <p class="credit">Royal County Down · thewanderinggolfers.com</p>
+  </div>
+  <div class="tab-content">
+  <svg class="map-watermark" viewBox="0 0 300 427.6"><use href="#ireland-outline"/></svg>
   <div class="card">
     <h2>Standings</h2>
     <div id="leaderboard-area"><div class="status">Loading live standings…</div></div>
     <div id="zero-sum" class="zero-sum"></div>
   </div>
+  </div>
   </section>
 
   <section class="tab-panel" id="panel-schedule">
+  <div class="hero-photo hp-portrush">
+    <h1>Schedule, Money &amp; Pairings</h1>
+    <p class="hero-subtitle">Round-by-round matchups and the pot</p>
+    <p class="credit">Royal Portrush, Dunluce Links · thewanderinggolfers.com</p>
+  </div>
+  <div class="tab-content">
+  <svg class="map-watermark" viewBox="0 0 300 427.6"><use href="#ireland-outline"/></svg>
   <div class="card">
     <h2>Schedule & matchups</h2>
     <div id="schedule-area"><div class="status">Loading schedule…</div></div>
@@ -156,9 +208,17 @@
     <h2>Pairing matrix</h2>
     <div id="matrix-area"><div class="status">Loading pairing matrix…</div></div>
   </div>
+  </div>
   </section>
 
   <section class="tab-panel" id="panel-extras">
+  <div class="hero-photo hp-donard">
+    <h1>Food, Drink &amp; Packing</h1>
+    <p class="hero-subtitle">Where we&rsquo;re eating, drinking and staying</p>
+    <p class="credit">Slieve Donard Hotel, Newcastle · Wikimedia Commons</p>
+  </div>
+  <div class="tab-content">
+  <svg class="map-watermark" viewBox="0 0 300 427.6"><use href="#ireland-outline"/></svg>
   <div class="card">
     <h2>Food &amp; drink guide</h2>
     <div id="fooddrink-area"><div class="status">Loading…</div></div>
@@ -168,12 +228,21 @@
     <h2>Packing list</h2>
     <div id="packing-area"><div class="status">Loading…</div></div>
   </div>
+  </div>
   </section>
 
   <section class="tab-panel" id="panel-rules">
+  <div class="hero-photo hp-ra">
+    <h1>Rules</h1>
+    <p class="hero-subtitle">How the scoring and payouts work</p>
+    <p class="credit">The R&amp;A Clubhouse, St Andrews · Wikimedia Commons</p>
+  </div>
+  <div class="tab-content">
+  <svg class="map-watermark" viewBox="0 0 300 427.6"><use href="#ireland-outline"/></svg>
   <div class="card">
     <h2>How this works</h2>
     <div id="howto-area"><div class="status">Loading…</div></div>
+  </div>
   </div>
   </section>
 
