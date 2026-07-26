@@ -150,6 +150,19 @@
     opacity: 0.14; pointer-events: none; z-index: 0;
   }
   .map-watermark { fill: var(--accent); }
+  .plain-header { text-align: center; padding: 6px 0 18px; }
+  .plain-header h1 { font-size: 20px; font-weight: 700; margin: 0 0 4px; }
+  .plain-header .hero-subtitle { font-size: 13px; color: var(--text-secondary); margin: 0; }
+  .round-team-block { background: var(--bg); border-radius: 10px; padding: 8px 10px; margin-top: 8px; }
+  .round-team-block:first-of-type { margin-top: 10px; }
+  .round-team-name { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .round-paid { font-size: 12px; font-weight: 700; color: var(--win); margin-left: auto; }
+  .round-team-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .round-members { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+  .badge { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.02em; padding: 2px 7px; border-radius: 10px; }
+  .badge-win { background: var(--accent-light); color: var(--win); }
+  .badge-lose { background: rgba(192,57,43,0.12); color: var(--loss); }
+  .badge-tie { background: rgba(138,137,128,0.18); color: var(--text-secondary); }
 </style>
 </head>
 <body>
@@ -165,6 +178,7 @@
   <nav class="tabs" id="tabs">
     <button class="tab-btn" data-tab="standings">Standings</button>
     <button class="tab-btn" data-tab="schedule">Schedule, Money &amp; Pairings</button>
+    <button class="tab-btn" data-tab="results">Results</button>
     <button class="tab-btn" data-tab="extras">Food, Drink &amp; Packing</button>
     <button class="tab-btn" data-tab="rules">Rules</button>
   </nav>
@@ -205,6 +219,20 @@
   <div class="card">
     <h2>Pairing matrix</h2>
     <div id="matrix-area"><div class="status">Loading pairing matrix…</div></div>
+  </div>
+  </div>
+  </section>
+
+  <section class="tab-panel" id="panel-results">
+  <div class="plain-header">
+    <h1>Results</h1>
+    <p class="hero-subtitle">Every round, by team and by player</p>
+  </div>
+  <div class="tab-content">
+  <svg class="map-watermark" viewBox="0 0 300 427.6"><use href="#ireland-outline"/></svg>
+  <div class="card">
+    <h2>Results by round</h2>
+    <div id="results-area"><div class="status">Loading results…</div></div>
   </div>
   </div>
   </section>
@@ -257,7 +285,7 @@
 // access-control-allow-origin: *, so it works from any page with a plain fetch,
 // no API key or JSONP script-tag trick required.
 const PUBLISHED_KEY = "2PACX-1vTEnz7upSi2y6PpYFPfkE9qu46u5hr0oOdFfhZOdnTm_U1lMzaF6auMg1AnudWu4cJe6xEDH8sLXpQi";
-const GIDS = { leaderboard: "1135406754", schedule: "884076011", matrix: "1623880694", roundLedger: "445216258", howto: "1601411585", foodDrink: "1800857795", packing: "48830357" };
+const GIDS = { leaderboard: "1135406754", schedule: "884076011", matrix: "1623880694", roundLedger: "445216258", howto: "1601411585", foodDrink: "1800857795", packing: "48830357", resultsByRound: "2127791249" };
 const REFRESH_MS = 60000;
 
 function parseCSV(text) {
@@ -571,15 +599,91 @@ async function loadPackingList() {
   }
 }
 
+function normalizeTeamKey(team) {
+  const t = String(team || "").trim();
+  if (/^[AB]$/i.test(t)) return "Team " + t.toUpperCase();
+  return t;
+}
+
+function resultBadge(result) {
+  const r = String(result || "").toUpperCase();
+  if (r === "WIN") return ' <span class="badge badge-win">WIN</span>';
+  if (r === "LOSE") return ' <span class="badge badge-lose">LOSE</span>';
+  if (r === "TIE") return ' <span class="badge badge-tie">TIE</span>';
+  return "";
+}
+
+async function loadResultsByRound() {
+  const area = document.getElementById("results-area");
+  try {
+    const rows = await fetchCsvRows(GIDS.resultsByRound);
+    const playerHIdx = rows.findIndex(r => r[0] === "Round" && r[2] === "Player");
+    const teamHIdx = rows.findIndex(r => r[0] === "Round" && r[2] === "Team / Pairing");
+    if (playerHIdx === -1 || teamHIdx === -1) throw new Error("header rows not found");
+
+    const playerRows = [];
+    for (let i = playerHIdx + 1; i < teamHIdx; i++) {
+      if (rows[i][0]) playerRows.push(rows[i]);
+    }
+    const teamRows = [];
+    for (let i = teamHIdx + 1; i < rows.length; i++) {
+      if (rows[i][0]) teamRows.push(rows[i]);
+    }
+    if (!playerRows.length && !teamRows.length) throw new Error("no result rows");
+
+    const order = [];
+    const byRound = {};
+    function ensure(round, format) {
+      if (!byRound[round]) { byRound[round] = { format: format, teams: [] }; order.push(round); }
+    }
+    teamRows.forEach(r => {
+      const round = r[0], format = r[1], team = r[2], members = r[3], score = r[4], result = r[5], paid = r[6];
+      ensure(round, format);
+      byRound[round].teams.push({ team: team, members: members, score: score, result: result, paid: paid, players: [] });
+    });
+    playerRows.forEach(r => {
+      const round = r[0], format = r[1], player = r[2], team = normalizeTeamKey(r[3]), net = r[4], result = r[5], paid = r[6];
+      if (!team) return; // not yet assigned (e.g. Day 6 before the draft) -- team block already says so
+      ensure(round, format);
+      let bucket = byRound[round].teams.find(t => t.team === team);
+      if (!bucket) { bucket = { team: team, members: "", score: "", result: result, paid: paid, players: [] }; byRound[round].teams.push(bucket); }
+      bucket.players.push({ player: player, net: net });
+    });
+
+    let html = "";
+    order.forEach(round => {
+      const info = byRound[round];
+      html += '<details><summary><span>' + esc(round) + '<br><span class="match-course">' + esc(info.format) + '</span></span><span class="chev">▶</span></summary>';
+      info.teams.forEach(t => {
+        html += '<div class="round-team-block"><div class="round-team-name">' + esc(t.team) + resultBadge(t.result) +
+          (t.paid ? '<span class="round-paid">' + esc(t.paid) + '</span>' : '') + '</div>';
+        if (t.score && (t.result || t.score !== "0")) html += '<div class="round-team-meta">Score: ' + esc(t.score) + '</div>';
+        if (t.players.length) {
+          html += '<div class="round-members">' + t.players.map(p => esc(p.player) + (p.net ? ' (net ' + esc(p.net) + ')' : '')).join(', ') + '</div>';
+        } else if (t.members) {
+          html += '<div class="round-members">' + esc(t.members) + '</div>';
+        }
+        html += '</div>';
+      });
+      html += '</details>';
+    });
+    area.innerHTML = html || '<div class="status">No rounds found.</div>';
+  } catch (err) {
+    area.innerHTML = '<div class="status error">Couldn\'t load round results.<br>' +
+      'Make sure the sheet is published to the web, then tap Refresh.<br>' +
+      '<small>' + esc(err.message || err) + '</small></div>';
+  }
+}
+
 async function loadAll() {
   document.getElementById("last-updated").textContent = "Refreshing…";
-  await Promise.all([loadLeaderboard(), loadSchedule(), loadPairingMatrix(), loadRoundLedger(), loadHowItWorks(), loadFoodDrink(), loadPackingList()]);
+  await Promise.all([loadLeaderboard(), loadSchedule(), loadPairingMatrix(), loadRoundLedger(), loadResultsByRound(), loadHowItWorks(), loadFoodDrink(), loadPackingList()]);
   const now = new Date();
   document.getElementById("last-updated").textContent =
     "Updated " + now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-const TABS = ["standings", "schedule", "extras", "rules"];
+const TABS = ["standings", "schedule", "results", "extras", "rules"];
 function showTab(id) {
   if (TABS.indexOf(id) === -1) id = TABS[0];
   document.querySelectorAll(".tab-panel").forEach(function (p) {
