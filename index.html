@@ -642,12 +642,12 @@ async function loadResultsByRound() {
       byRound[round].teams.push({ team: team, members: members, score: score, result: result, paid: paid, players: [] });
     });
     playerRows.forEach(r => {
-      const round = r[0], format = r[1], player = r[2], team = normalizeTeamKey(r[3]), net = r[4], result = r[5], paid = r[6];
+      const round = r[0], format = r[1], player = r[2], team = normalizeTeamKey(r[3]), gross = r[4], net = r[5], result = r[6], paid = r[7];
       if (!team) return; // not yet assigned (e.g. Day 6 before the draft) -- team block already says so
       ensure(round, format);
       let bucket = byRound[round].teams.find(t => t.team === team);
       if (!bucket) { bucket = { team: team, members: "", score: "", result: result, paid: paid, players: [] }; byRound[round].teams.push(bucket); }
-      bucket.players.push({ player: player, net: net });
+      bucket.players.push({ player: player, gross: gross, net: net });
     });
 
     let html = "";
@@ -659,7 +659,12 @@ async function loadResultsByRound() {
           (t.paid ? '<span class="round-paid">' + esc(t.paid) + '</span>' : '') + '</div>';
         if (t.score && (t.result || t.score !== "0")) html += '<div class="round-team-meta">Score: ' + esc(t.score) + '</div>';
         if (t.players.length) {
-          html += '<div class="round-members">' + t.players.map(p => esc(p.player) + (p.net ? ' (net ' + esc(p.net) + ')' : '')).join(', ') + '</div>';
+          html += '<div class="round-members">' + t.players.map(p => {
+            let scoreTxt = "";
+            if (p.gross && p.net) scoreTxt = ' (gross ' + esc(p.gross) + ' / net ' + esc(p.net) + ')';
+            else if (p.net) scoreTxt = ' (net ' + esc(p.net) + ')';
+            return esc(p.player) + scoreTxt;
+          }).join(', ') + '</div>';
         } else if (t.members) {
           html += '<div class="round-members">' + esc(t.members) + '</div>';
         }
