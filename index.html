@@ -178,6 +178,7 @@
   }
   .hcp-name { color: var(--text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .hcp-value { color: var(--text-secondary); font-weight: 700; flex: 0 0 auto; }
+  .tee-time { font-size: 12px; font-weight: 700; color: var(--accent); }
 </style>
 </head>
 <body>
@@ -434,9 +435,10 @@ async function loadSchedule() {
     let html = "";
     dataRows.forEach(r => {
       const match = r[0], course = r[1], parRatingSlope = r[2], about = r[3];
-      const game = r[4], teams = r[5], foursome = r[6], courseHcp = r[9];
+      const game = r[4], teams = r[5], foursome = r[6], courseHcp = r[9], teeTime = r[10];
       html += '<details>' +
-        '<summary><span>' + esc(match) + '<br><span class="match-course">' + esc(course) + '</span></span>' +
+        '<summary><span>' + esc(match) + '<br><span class="match-course">' + esc(course) + '</span>' +
+        (teeTime ? '<br><span class="tee-time">⏰ ' + esc(teeTime) + '</span>' : '') + '</span>' +
         '<span class="chev">▶</span></summary>' +
         '<div class="detail-block">' + esc(game) + '</div>' +
         (parRatingSlope ? '<div class="detail-label">Course</div><div class="detail-block">' + esc(parRatingSlope) + (about ? '\n' + esc(about) : '') + '</div>' : '') +
