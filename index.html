@@ -163,6 +163,14 @@
   .badge-win { background: var(--accent-light); color: var(--win); }
   .badge-lose { background: rgba(192,57,43,0.12); color: var(--loss); }
   .badge-tie { background: rgba(138,137,128,0.18); color: var(--text-secondary); }
+  .weather-note { font-size: 12px; color: var(--text-secondary); margin: 0 0 12px; }
+  .weather-days { display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 10px 2px 2px; }
+  .weather-day { flex: 0 0 auto; width: 82px; text-align: center; background: var(--bg); border-radius: 10px; padding: 8px 5px; }
+  .weather-date { font-size: 11px; font-weight: 700; color: var(--text-secondary); }
+  .weather-icon { font-size: 22px; margin: 4px 0; line-height: 1; }
+  .weather-temps { font-size: 13px; font-weight: 700; }
+  .weather-lo { color: var(--text-muted); font-weight: 400; }
+  .weather-meta { font-size: 10px; color: var(--text-secondary); margin-top: 3px; line-height: 1.4; }
 </style>
 </head>
 <body>
@@ -179,6 +187,7 @@
     <button class="tab-btn" data-tab="standings">Standings</button>
     <button class="tab-btn" data-tab="schedule">Schedule, Money &amp; Pairings</button>
     <button class="tab-btn" data-tab="results">Results</button>
+    <button class="tab-btn" data-tab="weather">Weather</button>
     <button class="tab-btn" data-tab="extras">Food, Drink &amp; Packing</button>
     <button class="tab-btn" data-tab="rules">Rules</button>
   </nav>
@@ -233,6 +242,20 @@
   <div class="card">
     <h2>Results by round</h2>
     <div id="results-area"><div class="status">Loading results…</div></div>
+  </div>
+  </div>
+  </section>
+
+  <section class="tab-panel" id="panel-weather">
+  <div class="plain-header">
+    <h1>Weather</h1>
+    <p class="hero-subtitle">7-day forecast for every course on the trip</p>
+  </div>
+  <div class="tab-content">
+  <svg class="map-watermark" viewBox="0 0 300 427.6"><use href="#ireland-outline"/></svg>
+  <div class="card">
+    <h2>Course forecasts</h2>
+    <div id="weather-area"><div class="status">Loading forecasts…</div></div>
   </div>
   </div>
   </section>
@@ -681,15 +704,101 @@ async function loadResultsByRound() {
   }
 }
 
+// Coordinates are hardcoded here (not sheet-driven) since weather comes from
+// a live API, not the Google Sheet. If the courses on the trip ever change,
+// update this list too.
+const COURSES = [
+  { name: "Malone Golf Club (Drumbridge & Ballydrain)", day: "Day 0", lat: 54.59682, lon: -5.92541 },
+  { name: "Ardglass", day: "Day 1 (Front 9 & Back 9)", lat: 54.26312, lon: -5.60981 },
+  { name: "Portstewart (Strand)", day: "Day 2 & Day 3", lat: 55.18132, lon: -6.71402 },
+  { name: "Castlerock (Mussenden)", day: "Day 2", lat: 55.15, lon: -6.78333 },
+  { name: "Royal Portrush (Dunluce)", day: "Day 3", lat: 55.19592, lon: -6.6493 },
+  { name: "Rosapenna — St. Patrick's Links", day: "Day 4", lat: 55.19694, lon: -7.85222 },
+  { name: "Royal County Down (Championship)", day: "Day 5 & Day 6", lat: 54.21804, lon: -5.88979 },
+  { name: "County Louth (Baltray)", day: "Day 7", lat: 53.74056, lon: -6.2675 },
+];
+
+// WMO weather codes -> [icon, label]. https://open-meteo.com/en/docs
+const WEATHER_CODES = {
+  0: ["☀️", "Clear"], 1: ["🌤️", "Mostly clear"], 2: ["⛅", "Partly cloudy"], 3: ["☁️", "Overcast"],
+  45: ["🌫️", "Fog"], 48: ["🌫️", "Freezing fog"],
+  51: ["🌦️", "Light drizzle"], 53: ["🌦️", "Drizzle"], 55: ["🌧️", "Dense drizzle"],
+  56: ["🌧️", "Freezing drizzle"], 57: ["🌧️", "Freezing drizzle"],
+  61: ["🌦️", "Light rain"], 63: ["🌧️", "Rain"], 65: ["🌧️", "Heavy rain"],
+  66: ["🌧️", "Freezing rain"], 67: ["🌧️", "Freezing rain"],
+  71: ["🌨️", "Light snow"], 73: ["🌨️", "Snow"], 75: ["❄️", "Heavy snow"], 77: ["🌨️", "Snow grains"],
+  80: ["🌦️", "Rain showers"], 81: ["🌧️", "Rain showers"], 82: ["⛈️", "Violent showers"],
+  85: ["🌨️", "Snow showers"], 86: ["❄️", "Snow showers"],
+  95: ["⛈️", "Thunderstorm"], 96: ["⛈️", "Thunderstorm + hail"], 99: ["⛈️", "Thunderstorm + hail"],
+};
+function weatherIcon(code) { return (WEATHER_CODES[code] || ["🌡️", "—"])[0]; }
+function weatherLabel(code) { return (WEATHER_CODES[code] || ["🌡️", "—"])[1]; }
+
+function formatDayLabel(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+}
+
+async function fetchCourseForecast(course) {
+  const url = "https://api.open-meteo.com/v1/forecast?latitude=" + course.lat + "&longitude=" + course.lon +
+    "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max" +
+    "&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=7&_=" + Date.now();
+  const resp = await fetch(url, { cache: "no-store" });
+  if (!resp.ok) throw new Error("HTTP " + resp.status);
+  const data = await resp.json();
+  const d = data.daily;
+  return d.time.map((date, i) => ({
+    date: date,
+    code: d.weather_code[i],
+    hi: Math.round(d.temperature_2m_max[i]),
+    lo: Math.round(d.temperature_2m_min[i]),
+    pop: d.precipitation_probability_max[i],
+    wind: Math.round(d.wind_speed_10m_max[i]),
+  }));
+}
+
+function renderWeatherDay(d) {
+  return '<div class="weather-day">' +
+    '<div class="weather-date">' + esc(formatDayLabel(d.date)) + '</div>' +
+    '<div class="weather-icon">' + weatherIcon(d.code) + '</div>' +
+    '<div class="weather-temps">' + d.hi + '° <span class="weather-lo">' + d.lo + '°</span></div>' +
+    '<div class="weather-meta">' + esc(weatherLabel(d.code)) + '</div>' +
+    '<div class="weather-meta">' + d.pop + '% rain<br>' + d.wind + ' mph wind</div>' +
+    '</div>';
+}
+
+async function loadWeather() {
+  const area = document.getElementById("weather-area");
+  try {
+    const results = await Promise.all(COURSES.map(c =>
+      fetchCourseForecast(c).then(days => ({ days: days })).catch(err => ({ error: err.message || String(err) }))
+    ));
+    let html = '<p class="weather-note">Forecasts refresh live from Open-Meteo — the closer a day is, the more reliable it is. Beyond a day or two out, treat this as a rough steer, not gospel (especially in Ireland).</p>';
+    results.forEach((r, i) => {
+      const c = COURSES[i];
+      html += '<details><summary><span>' + esc(c.name) + '<br><span class="match-course">' + esc(c.day) + '</span></span><span class="chev">▶</span></summary>';
+      if (r.error) {
+        html += '<div class="detail-block">Couldn\'t load this forecast.<br><small>' + esc(r.error) + '</small></div>';
+      } else {
+        html += '<div class="weather-days">' + r.days.map(renderWeatherDay).join("") + '</div>';
+      }
+      html += '</details>';
+    });
+    area.innerHTML = html;
+  } catch (err) {
+    area.innerHTML = '<div class="status error">Couldn\'t load weather.<br><small>' + esc(err.message || err) + '</small></div>';
+  }
+}
+
 async function loadAll() {
   document.getElementById("last-updated").textContent = "Refreshing…";
-  await Promise.all([loadLeaderboard(), loadSchedule(), loadPairingMatrix(), loadRoundLedger(), loadResultsByRound(), loadHowItWorks(), loadFoodDrink(), loadPackingList()]);
+  await Promise.all([loadLeaderboard(), loadSchedule(), loadPairingMatrix(), loadRoundLedger(), loadResultsByRound(), loadWeather(), loadHowItWorks(), loadFoodDrink(), loadPackingList()]);
   const now = new Date();
   document.getElementById("last-updated").textContent =
     "Updated " + now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-const TABS = ["standings", "schedule", "results", "extras", "rules"];
+const TABS = ["standings", "schedule", "results", "weather", "extras", "rules"];
 function showTab(id) {
   if (TABS.indexOf(id) === -1) id = TABS[0];
   document.querySelectorAll(".tab-panel").forEach(function (p) {
