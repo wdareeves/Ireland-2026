@@ -414,7 +414,7 @@ function renderHcpGrid(text) {
   const items = parseHcpList(text);
   if (!items.length) return "";
   return '<div class="hcp-grid">' + items.map(p =>
-    '<div class="hcp-cell"><span class="hcp-name" title="' + esc(p.name) + '">' + esc(shortName(p.name)) + '</span>' +
+    '<div class="hcp-cell"><span class="hcp-name">' + esc(p.name) + '</span>' +
     '<span class="hcp-value">' + esc(p.hcp) + '</span></div>'
   ).join('') + '</div>';
 }
