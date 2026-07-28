@@ -388,7 +388,7 @@ async function loadSchedule() {
     let html = "";
     dataRows.forEach(r => {
       const match = r[0], course = r[1], parRatingSlope = r[2], about = r[3];
-      const game = r[4], teams = r[5], foursome = r[6];
+      const game = r[4], teams = r[5], foursome = r[6], courseHcp = r[9];
       html += '<details>' +
         '<summary><span>' + esc(match) + '<br><span class="match-course">' + esc(course) + '</span></span>' +
         '<span class="chev">▶</span></summary>' +
@@ -396,6 +396,7 @@ async function loadSchedule() {
         (parRatingSlope ? '<div class="detail-label">Course</div><div class="detail-block">' + esc(parRatingSlope) + (about ? '\n' + esc(about) : '') + '</div>' : '') +
         (teams ? '<div class="detail-label">Teams</div><div class="detail-block">' + esc(teams) + '</div>' : '') +
         (foursome ? '<div class="detail-label">Foursome</div><div class="detail-block">' + esc(foursome) + '</div>' : '') +
+        (courseHcp ? '<div class="detail-label">Course Handicaps</div><div class="detail-block">' + esc(courseHcp) + '</div>' : '') +
         '</details>';
     });
     area.innerHTML = html || '<div class="status">No matches found.</div>';
