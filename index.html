@@ -171,6 +171,13 @@
   .weather-temps { font-size: 13px; font-weight: 700; }
   .weather-lo { color: var(--text-muted); font-weight: 400; }
   .weather-meta { font-size: 10px; color: var(--text-secondary); margin-top: 3px; line-height: 1.4; }
+  .hcp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 6px; }
+  .hcp-cell {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 6px;
+    background: var(--bg); border-radius: 8px; padding: 6px 10px; font-size: 12px;
+  }
+  .hcp-name { color: var(--text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hcp-value { color: var(--text-secondary); font-weight: 700; flex: 0 0 auto; }
 </style>
 </head>
 <body>
@@ -395,6 +402,22 @@ async function loadLeaderboard() {
   }
 }
 
+// Parses "Aiken Reeves (13), Wake Hamilton (8), ..." into [{name, hcp}, ...].
+function parseHcpList(text) {
+  return String(text || "").split(/,\s*/).map(part => {
+    const m = part.trim().match(/^(.*?)\s*\((\d+(?:\.\d+)?)\)$/);
+    return m ? { name: m[1], hcp: m[2] } : null;
+  }).filter(Boolean);
+}
+function renderHcpGrid(text) {
+  const items = parseHcpList(text);
+  if (!items.length) return "";
+  return '<div class="hcp-grid">' + items.map(p =>
+    '<div class="hcp-cell"><span class="hcp-name" title="' + esc(p.name) + '">' + esc(shortName(p.name)) + '</span>' +
+    '<span class="hcp-value">' + esc(p.hcp) + '</span></div>'
+  ).join('') + '</div>';
+}
+
 async function loadSchedule() {
   const area = document.getElementById("schedule-area");
   try {
@@ -402,7 +425,7 @@ async function loadSchedule() {
     const hIdx = rows.findIndex(r => r[0] === "Match");
     if (hIdx === -1) throw new Error("header row not found");
     const dataRows = [];
-    for (let i = hIdx + 1; i < rows.length && dataRows.length < 10; i++) {
+    for (let i = hIdx + 1; i < rows.length && dataRows.length < 20; i++) {
       if (!rows[i][0]) break;
       dataRows.push(rows[i]);
     }
@@ -419,7 +442,7 @@ async function loadSchedule() {
         (parRatingSlope ? '<div class="detail-label">Course</div><div class="detail-block">' + esc(parRatingSlope) + (about ? '\n' + esc(about) : '') + '</div>' : '') +
         (teams ? '<div class="detail-label">Teams</div><div class="detail-block">' + esc(teams) + '</div>' : '') +
         (foursome ? '<div class="detail-label">Foursome</div><div class="detail-block">' + esc(foursome) + '</div>' : '') +
-        (courseHcp ? '<div class="detail-label">Course Handicaps</div><div class="detail-block">' + esc(courseHcp) + '</div>' : '') +
+        (courseHcp ? '<div class="detail-label">Course Handicaps</div>' + renderHcpGrid(courseHcp) : '') +
         '</details>';
     });
     area.innerHTML = html || '<div class="status">No matches found.</div>';
@@ -493,7 +516,7 @@ async function loadRoundLedger() {
     const hIdx = rows.findIndex(r => r[0] === "Round");
     if (hIdx === -1) throw new Error("header row not found");
     const dataRows = [];
-    for (let i = hIdx + 1; i < rows.length && dataRows.length < 10; i++) {
+    for (let i = hIdx + 1; i < rows.length && dataRows.length < 20; i++) {
       if (!rows[i][0]) break;
       dataRows.push(rows[i]);
     }
