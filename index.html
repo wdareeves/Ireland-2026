@@ -403,17 +403,19 @@ async function loadLeaderboard() {
   }
 }
 
-// Parses "Aiken Reeves (13), Wake Hamilton (8), ..." into [{name, hcp}, ...].
+// Parses "Aiken Reeves (13), Wake Hamilton (8), ..." or "Team A (idx 10.3 → HCP 11), ..."
+// into [{name, hcp}, ...]. The parenthesized part can be a plain number or free text.
 function parseHcpList(text) {
   return String(text || "").split(/,\s*/).map(part => {
-    const m = part.trim().match(/^(.*?)\s*\((\d+(?:\.\d+)?)\)$/);
+    const m = part.trim().match(/^(.*?)\s*\((.+)\)$/);
     return m ? { name: m[1], hcp: m[2] } : null;
   }).filter(Boolean);
 }
 function renderHcpGrid(text) {
   const items = parseHcpList(text);
   if (!items.length) return "";
-  return '<div class="hcp-grid">' + items.map(p =>
+  const cols = items.length <= 2 ? 1 : 2;
+  return '<div class="hcp-grid" style="grid-template-columns:repeat(' + cols + ',1fr)">' + items.map(p =>
     '<div class="hcp-cell"><span class="hcp-name">' + esc(p.name) + '</span>' +
     '<span class="hcp-value">' + esc(p.hcp) + '</span></div>'
   ).join('') + '</div>';
