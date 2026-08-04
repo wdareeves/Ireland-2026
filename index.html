@@ -49,6 +49,23 @@
   h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; }
   .subtitle { font-size: 13px; color: var(--text-secondary); margin: 0; }
   .refresh-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 12px; font-size: 12px; color: var(--text-muted); }
+  .countdown-banner {
+    margin-top: 12px; padding: 10px 16px; border-radius: 12px;
+    background: var(--accent-light); color: var(--accent); font-weight: 700;
+    font-size: 14px; text-align: center;
+  }
+  .countdown-banner .cd-sub { display: block; font-size: 11px; font-weight: 500; color: var(--text-secondary); margin-top: 2px; }
+  .player-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .player-card { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 14px 10px; text-align: center; }
+  .player-avatar {
+    width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 17px; color: #fff; object-fit: cover;
+  }
+  .player-name { font-weight: 700; font-size: 13px; }
+  .player-nickname { font-size: 11px; color: var(--text-secondary); font-style: italic; margin-top: 2px; }
+  .player-hcp { display: inline-block; margin-top: 6px; font-size: 11px; font-weight: 700; color: var(--accent); background: var(--accent-light); border-radius: 10px; padding: 2px 8px; }
+  .player-course { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
   button {
     font: inherit; font-size: 13px; padding: 6px 14px; border-radius: 20px;
     border: 1px solid var(--border); background: var(--card); color: var(--text);
@@ -189,11 +206,13 @@
       <span id="last-updated">Loading…</span>
       <button id="refresh-btn" onclick="loadAll()">Refresh now</button>
     </div>
+    <div id="countdown-banner" class="countdown-banner">Loading countdown…</div>
   </header>
 
   <nav class="tabs" id="tabs">
     <button class="tab-btn" data-tab="standings">Standings</button>
     <button class="tab-btn" data-tab="schedule">Schedule, Money &amp; Pairings</button>
+    <button class="tab-btn" data-tab="players">Players</button>
     <button class="tab-btn" data-tab="results">Results</button>
     <button class="tab-btn" data-tab="weather">Weather</button>
     <button class="tab-btn" data-tab="extras">Food, Drink &amp; Packing</button>
@@ -236,6 +255,20 @@
   <div class="card">
     <h2>Pairing matrix</h2>
     <div id="matrix-area"><div class="status">Loading pairing matrix…</div></div>
+  </div>
+  </div>
+  </section>
+
+  <section class="tab-panel" id="panel-players">
+  <div class="plain-header">
+    <h1>Players</h1>
+    <p class="hero-subtitle">Who's making the trip</p>
+  </div>
+  <div class="tab-content">
+  <svg class="map-watermark" viewBox="0 0 300 427.6"><use href="#ireland-outline"/></svg>
+  <div class="card">
+    <h2>The 8</h2>
+    <div id="players-area"><div class="status">Loading players…</div></div>
   </div>
   </div>
   </section>
@@ -316,7 +349,28 @@
 // access-control-allow-origin: *, so it works from any page with a plain fetch,
 // no API key or JSONP script-tag trick required.
 const PUBLISHED_KEY = "2PACX-1vTEnz7upSi2y6PpYFPfkE9qu46u5hr0oOdFfhZOdnTm_U1lMzaF6auMg1AnudWu4cJe6xEDH8sLXpQi";
-const GIDS = { leaderboard: "1135406754", schedule: "884076011", matrix: "1623880694", roundLedger: "445216258", howto: "1601411585", foodDrink: "1800857795", packing: "48830357", resultsByRound: "2127791249" };
+const GIDS = { leaderboard: "1135406754", schedule: "884076011", matrix: "1623880694", roundLedger: "445216258", howto: "1601411585", foodDrink: "1800857795", packing: "48830357", resultsByRound: "2127791249", players: "354645736" };
+
+// First tee time of the trip: Malone Golf Club, Day 0, 3:00pm local Belfast time (BST, UTC+1).
+const TEE_OFF_TARGET = new Date("2026-08-01T15:00:00+01:00").getTime();
+let countdownTimer = null;
+function updateCountdown() {
+  const el = document.getElementById("countdown-banner");
+  if (!el) return;
+  const diff = TEE_OFF_TARGET - Date.now();
+  if (diff <= 0) {
+    el.innerHTML = '⛳ We\'re off! <span class="cd-sub">Round 1 is underway at Malone.</span>';
+    if (countdownTimer) clearInterval(countdownTimer);
+    return;
+  }
+  const totalSeconds = Math.floor(diff / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const parts = (days > 0 ? days + "d " : "") + hours + "h " + minutes + "m " + seconds + "s";
+  el.innerHTML = '⛳ Tee off in ' + parts + '<span class="cd-sub">Malone Golf Club · 3:00pm Belfast time, Sat Aug 1</span>';
+}
 const REFRESH_MS = 60000;
 
 function parseCSV(text) {
@@ -526,7 +580,7 @@ async function loadRoundLedger() {
     }
     if (!dataRows.length) throw new Error("no round rows");
 
-    let html = '<p class="ledger-note">Buy-in per player and the gross payout to whoever wins each round -- legs within a round (Day 1, Day 2, Day 5) are added together. Assumes an outright winner; a tie splits the pot further.</p>';
+    let html = '<p class="ledger-note">Buy-in per player and the gross payout to whoever wins each round -- legs within a round (Day 1, Day 2, Day 3, Day 5) are added together. Assumes an outright winner; a tie splits the pot further.</p>';
     html += '<table class="ledger"><thead><tr><th>Round</th><th class="num">Buy-in</th><th class="num">Payout</th></tr></thead><tbody>';
     dataRows.forEach(r => {
       html += '<tr>' +
@@ -817,15 +871,59 @@ async function loadWeather() {
   }
 }
 
+const PLAYER_COLORS = ["#0f6e56", "#8a5a44", "#4a6fa5", "#a5424a", "#5a7d3c", "#7a4ea0", "#c98a1f", "#3c7d7d"];
+function playerAvatarFallback(img, initials, color) {
+  const div = document.createElement("div");
+  div.className = "player-avatar";
+  div.style.background = color;
+  div.textContent = initials;
+  img.replaceWith(div);
+}
+async function loadPlayers() {
+  const area = document.getElementById("players-area");
+  try {
+    const rows = await fetchCsvRows(GIDS.players);
+    const hIdx = rows.findIndex(r => r[0] === "Player");
+    if (hIdx === -1) throw new Error("header row not found");
+    const dataRows = [];
+    for (let i = hIdx + 1; i < rows.length && dataRows.length < 20; i++) {
+      if (!rows[i][0]) break;
+      dataRows.push(rows[i]);
+    }
+    if (!dataRows.length) throw new Error("no players found");
+
+    let html = '<div class="player-grid">';
+    dataRows.forEach((r, i) => {
+      const name = r[0], nickname = r[1], course = r[2], hcp = r[3], photo = r[4];
+      const initials = String(name).split(" ").map(w => w[0] || "").join("").slice(0, 2).toUpperCase();
+      const color = PLAYER_COLORS[i % PLAYER_COLORS.length];
+      const avatarHtml = photo
+        ? '<img class="player-avatar" src="' + esc(photo) + '" alt="' + esc(name) + '" ' +
+          'onerror="playerAvatarFallback(this,\'' + initials + '\',\'' + color + '\')">'
+        : '<div class="player-avatar" style="background:' + color + '">' + esc(initials) + '</div>';
+      html += '<div class="player-card">' + avatarHtml +
+        '<div class="player-name">' + esc(name) + '</div>' +
+        (nickname ? '<div class="player-nickname">"' + esc(nickname) + '"</div>' : '') +
+        (hcp ? '<div class="player-hcp">HCP ' + esc(hcp) + '</div>' : '') +
+        (course ? '<div class="player-course">🏠 ' + esc(course) + '</div>' : '') +
+        '</div>';
+    });
+    html += '</div>';
+    area.innerHTML = html;
+  } catch (err) {
+    area.innerHTML = '<div class="status error">Couldn\'t load players.<br><small>' + esc(err.message || err) + '</small></div>';
+  }
+}
+
 async function loadAll() {
   document.getElementById("last-updated").textContent = "Refreshing…";
-  await Promise.all([loadLeaderboard(), loadSchedule(), loadPairingMatrix(), loadRoundLedger(), loadResultsByRound(), loadWeather(), loadHowItWorks(), loadFoodDrink(), loadPackingList()]);
+  await Promise.all([loadLeaderboard(), loadSchedule(), loadPlayers(), loadPairingMatrix(), loadRoundLedger(), loadResultsByRound(), loadWeather(), loadHowItWorks(), loadFoodDrink(), loadPackingList()]);
   const now = new Date();
   document.getElementById("last-updated").textContent =
     "Updated " + now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-const TABS = ["standings", "schedule", "results", "weather", "extras", "rules"];
+const TABS = ["standings", "schedule", "players", "results", "weather", "extras", "rules"];
 function showTab(id) {
   if (TABS.indexOf(id) === -1) id = TABS[0];
   document.querySelectorAll(".tab-panel").forEach(function (p) {
@@ -847,6 +945,8 @@ showTab(location.hash.slice(1));
 
 loadAll();
 setInterval(loadAll, REFRESH_MS);
+updateCountdown();
+countdownTimer = setInterval(updateCountdown, 1000);
 </script>
 </body>
 </html>
